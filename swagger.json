@@ -1,0 +1,395 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "FeatureVotingApp Backend API",
+    "version": "1.0.0",
+    "description": "A RESTful API for feature voting system built with Express.js, TypeScript, and SQLite",
+    "contact": { "name": "API Support", "email": "martin.eesmaa@gmail.com" }
+  },
+  "servers": [
+    { "url": "http://localhost:3000", "description": "Development server" }
+  ],
+  "externalDocs": {
+    "description": "Download Swagger JSON",
+    "url": "/api-docs/swagger.json"
+  },
+  "components": {
+    "schemas": {
+      "Feature": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique identifier for the feature"
+          },
+          "title": {
+            "type": "string",
+            "description": "Title of the feature",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "votes": {
+            "type": "integer",
+            "description": "Number of votes for the feature",
+            "minimum": 0
+          }
+        },
+        "required": ["id", "title", "votes"]
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": { "type": "string", "description": "Error message" },
+          "details": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "field": {
+                  "type": "string",
+                  "description": "Field that caused the error"
+                },
+                "message": {
+                  "type": "string",
+                  "description": "Error message for the field"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/features": {
+      "get": {
+        "summary": "Get all features",
+        "description": "Retrieve all features ordered by votes in descending order",
+        "tags": ["Features"],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": { "type": "integer", "minimum": 1 },
+            "description": "Number of features to return"
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "schema": { "type": "integer", "minimum": 0 },
+            "description": "Number of features to skip"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of features",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Feature" }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a new feature",
+        "description": "Create a new feature with the provided title",
+        "tags": ["Features"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200,
+                    "description": "Title of the feature"
+                  }
+                },
+                "required": ["title"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Feature created successfully",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Feature" }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/features/{id}/vote": {
+      "post": {
+        "summary": "Vote for a feature",
+        "description": "Increment the vote count for a specific feature",
+        "tags": ["Features"],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+            },
+            "description": "Feature ID (UUID)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Feature voted successfully",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Feature" }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "404": {
+            "description": "Feature not found",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/features/{id}/unvote": {
+      "post": {
+        "summary": "Unvote a feature",
+        "description": "Decrement the vote count for a specific feature (not below 0)",
+        "tags": ["Features"],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+            },
+            "description": "Feature ID (UUID)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Feature unvoted successfully",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Feature" }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "404": {
+            "description": "Feature not found",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/features/{id}": {
+      "delete": {
+        "summary": "Delete a feature",
+        "description": "Delete a specific feature by ID",
+        "tags": ["Features"],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+            },
+            "description": "Feature ID to delete (UUID)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Feature deleted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Feature deleted successfully"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "404": {
+            "description": "Feature not found",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "summary": "Update a feature",
+        "description": "Update the title of a specific feature",
+        "tags": ["Features"],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+            },
+            "description": "Feature ID to update (UUID)"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200,
+                    "description": "New title for the feature"
+                  }
+                },
+                "required": ["title"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Feature updated successfully",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Feature" }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "404": {
+            "description": "Feature not found",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "tags": []
+}
